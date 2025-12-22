@@ -39,3 +39,7 @@
 
 # debug information files
 *.dwo
+opencv.zip 
+build/opencv.zip 
+build/opencv-4.x/
+build/build/
