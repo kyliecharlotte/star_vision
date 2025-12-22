@@ -25,16 +25,9 @@ struct options {
     std::optional<char> method;
 };
 
-// user-defined scoped enum, wr = 0, ap = 1
-// write_mode mode = write_mode::wr;
-enum class write_mode {
-    wr,
-    ap
-};
-
 std::optional<char> parse_method(std::string_view s) {
     std::cout << "method work" << std::endl;
-    if (s == "x") return 'x';
+    if (s == "e") return 'e';
     if (s == "y") return 'y';
     if (s == "") return 'z';
     return std::nullopt;
@@ -66,17 +59,49 @@ void help_func(char *call) {
     std::cout << "Usage: " << call << '\n';
     std::cout << "Options:" << '\n';
     std::cout << "\t-h or --help: Display Help information" << '\n';
-    std::cout << "\t-m or --method: Method" << '\n';
-    std::cout << "\t\t Method 1: Desc" << '\n';
+    std::cout << "\t-m or --method: Method to be Applied to Image" << '\n';
+    std::cout << "\t\t Method 1: Edge Detection" << '\n';
+    std::cout << "\t\t\t Smooths the image to reduce noise, useful for object detection" << '\n';
     std::cout << "\t-i or --input: Input File" << '\n';
     std::cout << "\t-o or --output: Output File" << '\n';
 }
 
-int load_preprocess(const std::string img_file){
+int load_edge_detection(const std::string img_file){
+
+    std::cout << "Current image: " << img_file << std::endl;
+
+    // Load Image
     cv::Mat image = cv::imread(img_file);
-    cv::Mat gray;
-    cv::Mat blurred;
-    cv::GaussianBlur(gray, blurred, cv::Size(5,5), 0);
+
+    if (image.empty()) {
+        std::cout << "This image does not exist (or is on the wrong file path): " << img_file << std::endl;
+        return -1;
+    }
+
+    cv::Mat img_gray, final;
+
+    // Gray Scale Conversion
+    cv::cvtColor(image, img_gray, cv::COLOR_BGR2GRAY);
+
+    // Edge Detection
+
+    // cv::Canny(img_gray, final, 100, 200);
+    cv::GaussianBlur(img_gray, final, cv::Size(11,11), 5, 0);
+    
+    // DISPLAY CODE
+    
+    cv::namedWindow("orig window", cv::WINDOW_KEEPRATIO);
+    cv::namedWindow("gray window", cv::WINDOW_KEEPRATIO);
+    cv::namedWindow("gaussian window", cv::WINDOW_KEEPRATIO);
+
+    imshow("orig window", image);
+    cv::resizeWindow("orig window", 300,300);
+    imshow("gray window", img_gray);
+    cv::resizeWindow("gray window", 300,300);
+    imshow("gaussian window", final);
+    cv::resizeWindow("gaussian window", 300,300);
+
+    cv::waitKey(0);
     return 0;
 }
 
@@ -90,7 +115,7 @@ int main(int argc, char *argv[]) {
 
         const int c = getopt_long(argc, argv, short_opt, long_opts, nullptr);
 
-        if (c == -1) {help_func(" "); return EXIT_FAILURE;}
+        if (c == -1) {break;}
 
         switch(c) {
             case 'h':
@@ -118,13 +143,14 @@ int main(int argc, char *argv[]) {
     char method;
 
     if (opt.method) {
-        std::cout << "Testing" << std::endl;
         method = *opt.method;
     }
 
     switch (method) {
-        case 'x':
-            load_preprocess((*opt.input).front());
+        case 'e':
+            for (auto i: *opt.input) {
+                load_edge_detection(i);
+            }
             break;
         case 'y':
             break;
