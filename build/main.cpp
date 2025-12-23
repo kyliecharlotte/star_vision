@@ -157,8 +157,15 @@ int load_edge_detection(const std::string img_file, const std::string out_file){
     imshow("edge detected window", final);
     cv::resizeWindow("edge detected window", 400,400);
 
+    int key;
+    
     while (window_watcher({"orig window", "edge detected window"})) {
-        cv::waitKey(100);
+        key = cv::waitKey(50);
+        if (key == 27 || key == 13) {
+            cv::destroyWindow("orig window");
+            cv::destroyWindow("sift window");
+            break;
+        }
     }
     
     return 0;
@@ -205,10 +212,11 @@ int load_sift(const std::string img_file, const std::string out_file){
     int key;
 
     while (window_watcher({"orig window", "sift window"})) {
-        key = cv::waitKey(100);
-        if (key == 27) {
+        key = cv::waitKey(50);
+        if (key == 27 || key == 13) {
             cv::destroyWindow("orig window");
             cv::destroyWindow("sift window");
+            break;
         }
     }
 
