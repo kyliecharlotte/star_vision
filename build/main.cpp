@@ -162,7 +162,7 @@ int load_sift(const std::string img_file, const std::string out_file){
 
     cv::waitKey(1);
     */
-   
+
     return 0;
 }
 
@@ -218,8 +218,8 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
 
-    const auto inputs = *opt.input;
-    const auto output = *opt.output;
+    const auto& inputs = *opt.input;
+    const auto& output = *opt.output;
 
     switch (method) {
         case 'e':
@@ -236,6 +236,7 @@ int main(int argc, char *argv[]) {
             break;
 
     }
+
 }
 
 
