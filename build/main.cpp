@@ -8,8 +8,6 @@
 #include <getopt.h>
 #include <optional>
 
-// SET UP
-
 // short flag options -- -h (help), -m, -i, -o 
 const char* const short_opt = ":hm:i:o:";
 const struct option long_opt[] = {
@@ -20,9 +18,20 @@ const struct option long_opt[] = {
     {NULL, 0, NULL, 0}
 };
 
+// helper function
+
+std::string trim_string(std::string s) {
+
+    const char* ignore_chars = " \n";
+    s.erase(s.find_last_not_of(ignore_chars)+1);
+    s.erase(0, s.find_first_not_of(ignore_chars));
+
+    return s;
+}
+
 struct options {
     std::optional<std::vector<std::string>> input;
-    std::optional<std::string> output;
+    std::optional<std::vector<std::string>> output;
     std::optional<char> method;
 };
 
@@ -34,16 +43,16 @@ std::optional<char> parse_method(std::string_view s) {
     return std::nullopt;
 }
 
-std::optional<std::vector<std::string>> parse_input(char *s) {
+std::optional<std::vector<std::string>> parse_input_output(char *s) {
 
-    const char *delim_1 = ", ";
-    const char *delim_2 = ", ";
+    const char *delim = ",";
     std::vector<std::string> input_list;
 
     std::stringstream ss(s);
     std::string token;
 
-    while (std::getline(ss, token, *delim_1) || (std::getline(ss, token, *delim_2))) {
+    while (std::getline(ss, token, *delim)) {
+        token = trim_string(token);
         input_list.push_back(token);
     }
 
@@ -68,9 +77,10 @@ void help_func(char *call) {
     std::cout << "\t-o or --output: Output File" << '\n';
 }
 
-int load_edge_detection(const std::string img_file){
+int load_edge_detection(const std::string img_file, const std::string out_file){
 
     std::cout << "Current image: " << img_file << std::endl;
+    std::cout << "Current method: edge" << std::endl;
 
     // Load Image
     cv::Mat image = cv::imread(img_file);
@@ -86,10 +96,8 @@ int load_edge_detection(const std::string img_file){
     cv::cvtColor(image, img_gray, cv::COLOR_BGR2GRAY);
 
     // Edge Detection
-
     cv::Canny(img_gray, final, 100, 200);
-    // cv::GaussianBlur(img_gray, final, cv::Size(11,11), 5, 0);
-    
+
     // DISPLAY CODE
     
     cv::namedWindow("orig window", cv::WINDOW_KEEPRATIO);
@@ -103,13 +111,15 @@ int load_edge_detection(const std::string img_file){
     imshow("edge detected window", final);
     cv::resizeWindow("edge detected window", 400,400);
 
-    cv::waitKey(0);
+    cv::waitKey(1);
+
     return 0;
 }
 
-int load_sift(const std::string img_file){
+int load_sift(const std::string img_file, const std::string out_file){
 
     std::cout << "Current image: " << img_file << std::endl;
+    std::cout << "Current method: sift" << std::endl;
 
     // Load Image
     cv::Mat image = cv::imread(img_file);
@@ -144,19 +154,17 @@ int load_sift(const std::string img_file){
     imshow("sift window", display_image);
     cv::resizeWindow("siftwindow", 300,300);
 
-    cv::waitKey(0);
+    cv::waitKey(1);
     return 0;
 }
 
 int main(int argc, char *argv[]) {
 
     options opt;
-    const char *short_opts;
-    const option *long_opts;
 
     while (true) {
 
-        const int c = getopt_long(argc, argv, short_opt, long_opts, nullptr);
+        const int c = getopt_long(argc, argv, short_opt, long_opt, nullptr);
 
         if (c == -1) {break;}
 
@@ -172,14 +180,18 @@ int main(int argc, char *argv[]) {
                 }
                 break;
             case 'i':
-                opt.input = parse_input(optarg);
+                opt.input = parse_input_output(optarg);
                 if (!opt.input) {
                     std::cerr << "Invalid input " << optarg << '\n';
                     return EXIT_FAILURE;
                 }
                 break;
             case 'o':
-                opt.output = optarg;
+                opt.output = parse_input_output(optarg);
+                if (!opt.input) {
+                    std::cerr << "Invalid input " << optarg << '\n';
+                    return EXIT_FAILURE;
+                }
                 break;
             default:
                 help_func(argv[0]);
@@ -193,15 +205,23 @@ int main(int argc, char *argv[]) {
         method = *opt.method;
     }
 
+    if (opt.input->size() != opt.output->size()) {
+        std::cerr << "Number of input files and output files needs to match." << '\n';
+        return EXIT_FAILURE;
+    }
+
+    auto inputs = *opt.input;
+    auto output = *opt.output;
+
     switch (method) {
         case 'e':
-            for (auto i: *opt.input) {
-                load_edge_detection(i);
+            for (std::size_t i = 0; i < opt.input->size(); ++i) {
+                load_edge_detection(inputs[i], output[i]);
             }
             break;
         case 's':
-            for (auto i: *opt.input) {
-                load_sift(i);
+            for (std::size_t i = 0; i < opt.input->size(); ++i) {
+                load_sift(inputs[i], output[i]);
             }
             break;
         case 'z':
