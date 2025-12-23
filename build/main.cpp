@@ -23,8 +23,14 @@ const struct option long_opt[] = {
 std::string trim_string(std::string s) {
 
     const char* ignore_chars = " \n";
+    const auto start = s.find_first_not_of(ignore_chars);
+
+    if (start == std::string::npos) {
+        return "";
+    }
+
     s.erase(s.find_last_not_of(ignore_chars)+1);
-    s.erase(0, s.find_first_not_of(ignore_chars));
+    s.erase(0, start);
 
     return s;
 }
@@ -99,7 +105,7 @@ int load_edge_detection(const std::string img_file, const std::string out_file){
     cv::Canny(img_gray, final, 100, 200);
 
     // DISPLAY CODE
-    
+    /*
     cv::namedWindow("orig window", cv::WINDOW_KEEPRATIO);
     cv::namedWindow("gray window", cv::WINDOW_KEEPRATIO);
     cv::namedWindow("edge detected window", cv::WINDOW_KEEPRATIO);
@@ -112,7 +118,7 @@ int load_edge_detection(const std::string img_file, const std::string out_file){
     cv::resizeWindow("edge detected window", 400,400);
 
     cv::waitKey(1);
-
+    */
     return 0;
 }
 
@@ -142,7 +148,7 @@ int load_sift(const std::string img_file, const std::string out_file){
     sift->detectAndCompute(img_gray, cv::noArray(), keypoints, descriptors);
     
     // DISPLAY CODE
-    
+    /*
     cv::namedWindow("orig window", cv::WINDOW_KEEPRATIO);
     cv::namedWindow("sift window", cv::WINDOW_KEEPRATIO);
 
@@ -155,6 +161,8 @@ int load_sift(const std::string img_file, const std::string out_file){
     cv::resizeWindow("siftwindow", 300,300);
 
     cv::waitKey(1);
+    */
+   
     return 0;
 }
 
@@ -210,8 +218,8 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
 
-    auto inputs = *opt.input;
-    auto output = *opt.output;
+    const auto inputs = *opt.input;
+    const auto output = *opt.output;
 
     switch (method) {
         case 'e':
