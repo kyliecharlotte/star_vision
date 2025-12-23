@@ -18,6 +18,11 @@ const struct option long_opt[] = {
     {NULL, 0, NULL, 0}
 };
 
+enum class Mode {
+    in,
+    out
+};
+
 // helper function
 
 std::string trim_string(std::string s) {
@@ -57,9 +62,11 @@ std::optional<char> parse_method(std::string_view s) {
 
 std::optional<char> prompt_method() {
 
-    std::cout << "Select method to be applied: \n" << std::endl;
+    std::cout << "Type the method you want to apply to your images: \n" << std::endl;
     std::cout << "  e: Canny edge detection\n" << std::endl;
-    std::cout << "  s: SIFT\n" << std::endl;
+    std::cout << "      - Canny edge detection: Smooths the image to reduce noise, useful for object detection\n" << std::endl;
+    std::cout << "  s: SIFT (Scale-Invariant Feature Transform)\n" << std::endl;
+    std::cout << "      - Identifies and points out objects in images, useful for object recognition tasks\n" << std::endl;
     std::cout << "Enter method: " << std::endl;
     std::cout << "> ";
 
@@ -72,10 +79,16 @@ std::optional<char> prompt_method() {
     return std::nullopt;
 }
 
-std::optional<std::vector<std::string>> parse_input_output(const std::string& s) {
+std::optional<std::vector<std::string>> parse_input_output(const std::string& s, Mode state) {
 
     const char *delim = ",";
     std::vector<std::string> input_list;
+
+    if (state == Mode::out) {
+        if (s.empty()) {
+            return input_list;
+        }
+    }
 
     std::stringstream ss(s);
     std::string token;
@@ -92,15 +105,16 @@ std::optional<std::vector<std::string>> parse_input_output(const std::string& s)
     }
 }
 
-std::optional<std::vector<std::string>> prompt_input_output() {
+std::optional<std::vector<std::string>> prompt_input_output(Mode state) {
 
     std::cout << "\nList image files to be edited: \n" << std::endl;
-    std::cout << "  Separate them by comma within quotes\n" << std::endl;
-    std::cout << "  ex: \"file_1.jpg, file_2.png\"" << std::endl;
+    std::cout << "  Please list the image files within quotes and separate them by commas\n" << std::endl;
+    std::cout << "  example one: \"file_1.jpg\"" << std::endl;
+    std::cout << "  example one: \"file_1.jpg, file_2.png\"" << std::endl;
     std::cout << "> ";
     std::string input_line;
     std::getline(std::cin, input_line);
-    return parse_input_output(input_line.data());
+    return parse_input_output(input_line.data(), state);
 
 }
 
@@ -158,13 +172,23 @@ int load_edge_detection(const std::string img_file, const std::string out_file){
     cv::resizeWindow("edge detected window", 400,400);
 
     int key;
-    
+
     while (window_watcher({"orig window", "edge detected window"})) {
         key = cv::waitKey(50);
         if (key == 27 || key == 13) {
             cv::destroyWindow("orig window");
             cv::destroyWindow("sift window");
             break;
+        }
+    }
+
+    if (!out_file.empty()) {
+        try {
+            cv::imwrite(out_file, final);
+        }
+        catch(const std::exception& e){
+            std::cerr << "Error: " << e.what() << "\n";
+            return -1;
         }
     }
     
@@ -220,11 +244,22 @@ int load_sift(const std::string img_file, const std::string out_file){
         }
     }
 
+    if (!out_file.empty()) {
+        try {
+            cv::imwrite(out_file, display_image);
+        }
+        catch(const std::exception& e){
+            std::cerr << "Error: " << e.what() << "\n";
+            return -1;
+        }
+    }
+
     return 0;
 }
 
 options prompt_user() {
     options opt;
+    Mode mode;
 
     while (!opt.method) {
         opt.method=prompt_method();
@@ -233,16 +268,19 @@ options prompt_user() {
         }
     }
     while (!opt.input) {
-        std::cout << "Input File Paths" << std::endl;
-        opt.input=prompt_input_output();
+        mode = Mode::in;
+        std::cout << "---Input Files---" << std::endl;
+        opt.input=prompt_input_output(mode);
         if (!opt.input) {
             std::cout << "Invalid input format\n";
         }
     }
 
     while (!opt.output) {
-        std::cout << "Output File Paths" << std::endl;
-        opt.output=prompt_input_output();
+        mode = Mode::out;
+        std::cout << "---Output Files---" << std::endl;
+        std::cout << "TIP: You can leave this empty!" << std::endl;
+        opt.output=prompt_input_output(mode);
         if (!opt.output) {
             std::cout << "Invalid output format\n";
         }
@@ -259,6 +297,7 @@ options prompt_user() {
 
 options parse_command_line(int argc, char* argv[]) {
     options opt; 
+    Mode mode;
     while (true) {
 
         const int c = getopt_long(argc, argv, short_opt, long_opt, nullptr);
@@ -280,7 +319,8 @@ options parse_command_line(int argc, char* argv[]) {
                 }
                 break;
             case 'i':
-                opt.input=parse_input_output(optarg);
+                mode = Mode::in;
+                opt.input=parse_input_output(optarg, mode);
                 if (!opt.input) {
                     throw std::runtime_error(
                         "Issue with input files\n"
@@ -288,7 +328,8 @@ options parse_command_line(int argc, char* argv[]) {
                 }
                 break;
             case 'o':
-                opt.output = parse_input_output(optarg);
+                mode = Mode::out;
+                opt.output = parse_input_output(optarg, mode);
                 if (!opt.output) {
                     throw std::runtime_error(
                         "Issue with output files\n"
@@ -303,9 +344,9 @@ options parse_command_line(int argc, char* argv[]) {
         }
     }
 
-    if (opt.input->size() != opt.output->size()) {
+    if (opt.input->size() != opt.output->size() && opt.output->size() != 0) {
         throw std::runtime_error(
-            "Input and output must have the same number of files\n"
+            "Input and output must have the same number of files given (unless no output is given)\n"
         );
     }
 
@@ -328,16 +369,29 @@ int main(int argc, char* argv[]) {
 
         const auto& input = *opt.input;
         const auto& output = *opt.output;
+        int output_size = output.size();
 
         switch (*opt.method) {
             case 'e':
-                for (size_t i = 0; i < input.size(); ++i) {
-                    load_edge_detection(input[i], output[i]);
+                if (output_size > 0) {
+                    for (size_t i = 0; i < input.size(); ++i) {
+                        load_edge_detection(input[i], output[i]);
+                    }
+                } else {
+                    for (size_t i = 0; i < input.size(); ++i) {
+                        load_edge_detection(input[i], NULL);
+                    }
                 }
                 break;
             case 's':
-                for (size_t i = 0; i < input.size(); ++i) {
-                    load_sift(input[i], output[i]);
+                if (output_size > 0) {
+                    for (size_t i = 0; i < input.size(); ++i) {
+                        load_sift(input[i], output[i]);
+                    }
+                } else {
+                    for (size_t i = 0; i < input.size(); ++i) {
+                        load_sift(input[i], NULL);
+                    }
                 }
                 break;
         }
@@ -351,80 +405,6 @@ int main(int argc, char* argv[]) {
 
     return EXIT_SUCCESS;
 }
-/*
-int main(int argc, char *argv[]) {
-
-    options opt;
-
-    while (true) {
-
-        const int c = getopt_long(argc, argv, short_opt, long_opt, nullptr);
-
-        if (c == -1) {break;}
-
-        switch(c) {
-            case 'h':
-                help_func(argv[0]);
-                return EXIT_SUCCESS;
-            case 'm': 
-                opt.method = parse_method(optarg);
-                if (!opt.method) {
-                    std::cerr << "Invalid method " << optarg << '\n';
-                    return EXIT_FAILURE;
-                }
-                break;
-            case 'i':
-                opt.input = parse_input_output(optarg);
-                if (!opt.input) {
-                    std::cerr << "Invalid input " << optarg << '\n';
-                    return EXIT_FAILURE;
-                }
-                break;
-            case 'o':
-                opt.output = parse_input_output(optarg);
-                if (!opt.input) {
-                    std::cerr << "Invalid input " << optarg << '\n';
-                    return EXIT_FAILURE;
-                }
-                break;
-            default:
-                help_func(argv[0]);
-                exit(EXIT_FAILURE);
-        }
-    }
-
-    char method;
-
-    if (opt.method) {
-        method = *opt.method;
-    }
-
-    if (opt.input->size() != opt.output->size()) {
-        std::cerr << "Number of input files and output files needs to match." << '\n';
-        return EXIT_FAILURE;
-    }
-
-    const auto& inputs = *opt.input;
-    const auto& output = *opt.output;
-
-    switch (method) {
-        case 'e':
-            for (std::size_t i = 0; i < opt.input->size(); ++i) {
-                load_edge_detection(inputs[i], output[i]);
-            }
-            break;
-        case 's':
-            for (std::size_t i = 0; i < opt.input->size(); ++i) {
-                load_sift(inputs[i], output[i]);
-            }
-            break;
-        case 'z':
-            break;
-
-    }
-
-}
-*/
 
 
 
