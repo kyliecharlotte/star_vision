@@ -22,15 +22,16 @@ const struct option long_opt[] = {
 
 std::string trim_string(std::string s) {
 
-    const char* ignore_chars = "\n\t";
+    const char* ignore_chars = " \n\t\'\"";
 
     const auto start = s.find_first_not_of(ignore_chars);
+    const auto end = s.find_last_not_of(ignore_chars);
+
     if (start == std::string::npos) {
         return "";
     }
 
-    s.erase(s.find_last_not_of(ignore_chars)+1);
-    s.erase(0, s.find_first_not_of(ignore_chars));
+    return s.substr(start,end-start+1);
 
     return s;
 }
@@ -59,7 +60,8 @@ std::optional<char> prompt_method() {
     std::cout << "Select method to be applied: \n" << std::endl;
     std::cout << "  e: Canny edge detection\n" << std::endl;
     std::cout << "  s: SIFT\n" << std::endl;
-    std::cout << "Enter method: \n" << std::endl;
+    std::cout << "Enter method: " << std::endl;
+    std::cout << "> ";
 
     std::string method_input;
     std::getline(std::cin, method_input);
@@ -70,7 +72,7 @@ std::optional<char> prompt_method() {
     return std::nullopt;
 }
 
-std::optional<std::vector<std::string>> parse_input_output(char *s) {
+std::optional<std::vector<std::string>> parse_input_output(const std::string& s) {
 
     const char *delim = ",";
     std::vector<std::string> input_list;
@@ -83,8 +85,6 @@ std::optional<std::vector<std::string>> parse_input_output(char *s) {
         input_list.push_back(token);
     }
 
-    std::cout << "input work" << std::endl;
-
     if (input_list.size() > 0) {
         return input_list;
     } else {
@@ -94,17 +94,18 @@ std::optional<std::vector<std::string>> parse_input_output(char *s) {
 
 std::optional<std::vector<std::string>> prompt_input_output() {
 
-    std::cout << "List image files to be edited: \n" << std::endl;
-    std::cout << "  Separate them by comma\n" << std::endl;
-    std::cout << "  ex: 'file_1.jpg,file_2.png '" << std::endl;
+    std::cout << "\nList image files to be edited: \n" << std::endl;
+    std::cout << "  Separate them by comma within quotes\n" << std::endl;
+    std::cout << "  ex: \"file_1.jpg, file_2.png\"" << std::endl;
+    std::cout << "> ";
     std::string input_line;
     std::getline(std::cin, input_line);
-    std::cout << "Parsing: " << input_line.data() << std::endl;
     return parse_input_output(input_line.data());
 
 }
 
 void help_func(char *call) {
+    //edit
     std::cout << "Usage: " << call << '\n';
     std::cout << "Options:" << '\n';
     std::cout << "\t-h or --help: Display Help information" << '\n';
@@ -115,10 +116,17 @@ void help_func(char *call) {
     std::cout << "\t-o or --output: Output File" << '\n';
 }
 
+bool window_watcher(const std::vector<std::string>& windows) {
+    for (const auto& w : windows) {
+        if (cv::getWindowProperty(w, cv::WND_PROP_VISIBLE) >=1 ) { return true; }
+    }
+    return false;
+}
+
 int load_edge_detection(const std::string img_file, const std::string out_file){
 
     std::cout << "Current image: " << img_file << std::endl;
-    std::cout << "Current method: edge" << std::endl;
+    std::cout << "Current method: Canny" << std::endl;
 
     // Load Image
     cv::Mat image = cv::imread(img_file);
@@ -139,17 +147,19 @@ int load_edge_detection(const std::string img_file, const std::string out_file){
     // DISPLAY CODE
     
     cv::namedWindow("orig window", cv::WINDOW_KEEPRATIO);
-    cv::namedWindow("gray window", cv::WINDOW_KEEPRATIO);
+    //cv::namedWindow("gray window", cv::WINDOW_KEEPRATIO);
     cv::namedWindow("edge detected window", cv::WINDOW_KEEPRATIO);
 
     imshow("orig window", image);
     cv::resizeWindow("orig window", 300,300);
-    imshow("gray window", img_gray);
-    cv::resizeWindow("gray window", 300,300);
+    //imshow("gray window", img_gray);
+    //cv::resizeWindow("gray window", 300,300);
     imshow("edge detected window", final);
     cv::resizeWindow("edge detected window", 400,400);
 
-    cv::waitKey(500);
+    while (window_watcher({"orig window", "edge detected window"})) {
+        cv::waitKey(100);
+    }
     
     return 0;
 }
@@ -157,7 +167,7 @@ int load_edge_detection(const std::string img_file, const std::string out_file){
 int load_sift(const std::string img_file, const std::string out_file){
 
     std::cout << "Current image: " << img_file << std::endl;
-    std::cout << "Current method: sift" << std::endl;
+    std::cout << "Current method: SIFT" << std::endl;
 
     // Load Image
     cv::Mat image = cv::imread(img_file);
@@ -172,7 +182,7 @@ int load_sift(const std::string img_file, const std::string out_file){
     // Gray Scale Conversion
     cv::cvtColor(image, img_gray, cv::COLOR_BGR2GRAY);
 
-    // Edge Detection
+    // sift Detection
 
     const auto sift = cv::SIFT::create();
     std::vector<cv::KeyPoint> keypoints;
@@ -190,10 +200,17 @@ int load_sift(const std::string img_file, const std::string out_file){
     cv::Mat display_image;
     cv::drawKeypoints(img_gray, keypoints, display_image);
     imshow("sift window", display_image);
-    cv::resizeWindow("siftwindow", 300,300);
+    cv::resizeWindow("sift window", 300,300);
 
-    cv::waitKey(500);
-    
+    int key;
+
+    while (window_watcher({"orig window", "sift window"})) {
+        key = cv::waitKey(100);
+        if (key == 27) {
+            cv::destroyWindow("orig window");
+            cv::destroyWindow("sift window");
+        }
+    }
 
     return 0;
 }
@@ -208,6 +225,7 @@ options prompt_user() {
         }
     }
     while (!opt.input) {
+        std::cout << "Input File Paths" << std::endl;
         opt.input=prompt_input_output();
         if (!opt.input) {
             std::cout << "Invalid input format\n";
@@ -215,6 +233,7 @@ options prompt_user() {
     }
 
     while (!opt.output) {
+        std::cout << "Output File Paths" << std::endl;
         opt.output=prompt_input_output();
         if (!opt.output) {
             std::cout << "Invalid output format\n";
@@ -307,15 +326,17 @@ int main(int argc, char* argv[]) {
                 for (size_t i = 0; i < input.size(); ++i) {
                     load_edge_detection(input[i], output[i]);
                 }
+                break;
             case 's':
                 for (size_t i = 0; i < input.size(); ++i) {
                     load_sift(input[i], output[i]);
                 }
+                break;
         }
 
     }
 
-    catch (const std::exception e) {
+    catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << "\n";
         return EXIT_FAILURE;
     }
