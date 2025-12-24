@@ -8,12 +8,20 @@
 #include <getopt.h>
 #include <optional>
 
+// Star Vision: Command-line interface and prompter for applying
+// computer vision algorithms (Canny edge detection, SIFT)
+// to multiple images using OpenCV.
+//
+// Entry: main()
+
 //=====================================================
 
-/* Global Definitions */
+constexpr const char* short_opt = ":hm:i:o:";
 
-const char* const short_opt = ":hm:i:o:";
-
+/**
+ * @brief Listed out COMMAND LINE flag values 
+ * 
+ */
 const struct option long_opt[] = {
     {"help", 0, NULL, 'h'},
     {"method", 1, NULL, 'm'},
@@ -22,24 +30,63 @@ const struct option long_opt[] = {
     {NULL, 0, NULL, 0}
 };
 
-// INPUT/OUTPUT mode class
+/**
+ * @brief Mode referencing whether user text is for input images or output path
+ * 
+ */
 enum class Mode {
     in,
     out
 };
 
-// COMMAND PROMPT exit class
-enum class Exit {
+/**
+ * @brief State allowing users to exit COMMAND PROMPT by pressing q  
+ * 
+ */
+enum class Exit{
     Ok,
     Quit
 };
 
+/**
+ * @brief Available methods for users to select from to be applied to their photos
+ * 
+ */
+enum class Method {
+    Edge,
+    Sift
+};
+
+/**
+ * @brief Input that will be collected from the user (output is optional)
+ * 
+ */
 struct options {
     std::optional<std::vector<std::string>> input;
     std::optional<std::vector<std::string>> output;
-    std::optional<char> method;
+    std::optional<Method> method;
 };
+
 //=====================================================
+
+/**
+ * @brief Text only function displayed to users in COMMAND LINE interface regarding flags and inputs
+ * 
+ */
+void help_func() {
+    std::cout << "Options:" << '\n';
+    std::cout << "\t-h or --help: Display Help information" << '\n';
+    std::cout << "\t-m or --method: Method to be Applied to Image" << '\n';
+    std::cout << "\t\t Method 1: Edge Detection (e)" << '\n';
+    std::cout << "\t\t - Canny edge detection algorithm smooths the image to reduce noise, useful for object detection" << '\n';
+    std::cout << "\t\t Method 2: SIFT (s)" << '\n';
+    std::cout << "\t\t - Identifies and points out objects in images, useful for object recognition tasks" << '\n';
+    std::cout << "\t-i or --input: Input File(s)" << '\n';
+    std::cout << "\t\t Example: \"input_1.jpg, input_2.png\" " << '\n';
+    std::cout << "\t-o or --output: Output File(s)" << '\n';
+    std::cout << "\t\t Example: \"output_1.jpg, output_2.png\" " << '\n';
+    std::cout << "\t\t If you do not want to save the results, just enter \"\"" << '\n';
+}
 
 /**
  * @brief Trims a string to remove any whitespace or extra characters
@@ -59,21 +106,6 @@ std::string trim_string(std::string s) {
     }
 
     return s.substr(start,end-start+1);
-
-    return s;
-}
-
-/**
- * @brief Displays a prompt and collects user input off the prompt
- * 
- * @param prompt Specific prompt shown to user indicating what they should enter
- * @return std::string 
- */
-std::string read_input_line (std::string prompt) {
-    std::cout << prompt;
-    std::string input_line;
-    std::getline(std::cin, input_line);
-    return input_line;
 }
 
 /**
@@ -82,10 +114,9 @@ std::string read_input_line (std::string prompt) {
  * @param s String from user representing method
  * @return std::optional<char> Null if not a pre-defined method
  */
-std::optional<char> parse_method(std::string_view s) {
-    if (s == "e" || s == "E") return 'e';
-    if (s == "s" || s == "S") return 's';
-    if (s == "q" || s == "Q") return 'q';
+std::optional<Method> parse_method(std::string_view s) {
+    if (s == "e" || s == "E") return Method::Edge;
+    if (s == "s" || s == "S") return Method::Sift;
     return std::nullopt;
 }
 
@@ -94,7 +125,8 @@ std::optional<char> parse_method(std::string_view s) {
  * 
  * @return std::optional<char> 
  */
-std::optional<char> prompt_method() {
+std::optional<Method> prompt_method(Exit& curr_state) {
+    curr_state = Exit::Ok; // Reset current state for each prompt_method call
 
     std::cout << "*** Welcome to Star Vision! ***\n" << std::endl; 
     std::cout << "Type the method you want to apply to your images: \n" << std::endl;
@@ -110,10 +142,11 @@ std::optional<char> prompt_method() {
     std::getline(std::cin, method_input);
 
     if (method_input == "e" || method_input == "E" || method_input == "S" || method_input == "s") {
-        return method_input[0];
+        return parse_method(method_input);
     }
     if (method_input == "q" || method_input == "Q") {
-        exit(EXIT_SUCCESS);
+        curr_state = Exit::Quit;
+        return std::nullopt;
     }
     return std::nullopt;
 }
@@ -132,7 +165,7 @@ std::optional<std::vector<std::string>> parse_input_output(const std::string& s,
     std::vector<std::string> input_list;
 
     if (state == Mode::out && (s.empty())) {
-        return std::vector<std::string>{};
+        return std::vector<std::string>{}; // In case of empty list of output file paths
     }
 
     std::stringstream ss(s);
@@ -156,36 +189,22 @@ std::optional<std::vector<std::string>> parse_input_output(const std::string& s,
  * @param state Class indicating whether the files are being entered as input or output, passed through to @parse_input_output
  * @return std::optional<std::vector<std::string>> 
  */
-std::optional<std::vector<std::string>> prompt_input_output(Mode state) {
+std::optional<std::vector<std::string>> prompt_input_output(Exit& curr_status, Mode state) {
 
     std::cout << "\nList image files: \n" << std::endl;
     std::cout << "  Please list the image files within quotes and separate them by commas.\n" << std::endl;
     std::cout << "  example one: \"file_1.jpg\"" << std::endl;
     std::cout << "  example one: \"file_1.jpg, file_2.png\"" << std::endl;
     std::cout << "> ";
-    
+
     std::string input_line;
     std::getline(std::cin, input_line);
-    return parse_input_output(input_line.data(), state);
-}
 
-/**
- * @brief Text only function displayed to users in COMMAND LINE interface regarding flags and inputs
- * 
- */
-void help_func() {
-    std::cout << "Options:" << '\n';
-    std::cout << "\t-h or --help: Display Help information" << '\n';
-    std::cout << "\t-m or --method: Method to be Applied to Image" << '\n';
-    std::cout << "\t\t Method 1: Edge Detection (e)" << '\n';
-    std::cout << "\t\t - Canny edge detection algorithm smooths the image to reduce noise, useful for object detection" << '\n';
-    std::cout << "\t\t Method 2: SIFT (s)" << '\n';
-    std::cout << "\t\t - Identifies and points out objects in images, useful for object recognition tasks" << '\n';
-    std::cout << "\t-i or --input: Input File(s)" << '\n';
-    std::cout << "\t\t Example: \"input_1.jpg, input_2.png\" " << '\n';
-    std::cout << "\t-o or --output: Output File(s)" << '\n';
-    std::cout << "\t\t Example: \"output_1.jpg, output_2.png\" " << '\n';
-    std::cout << "\t\t If you do not want to save the results, just enter \"\" or leave it blank" << '\n';
+    if (input_line == "q") {
+        curr_status = Exit::Quit;
+    }
+
+    return parse_input_output(input_line.data(), state);
 }
 
 /**
@@ -196,8 +215,9 @@ void help_func() {
  * @return false If no window is open
  */
 bool window_watcher(const std::vector<std::string>& windows) {
+
     for (const auto& w : windows) {
-        if (cv::getWindowProperty(w, cv::WND_PROP_VISIBLE) >=1 ) { return true; }
+        if (cv::getWindowProperty(w, cv::WND_PROP_VISIBLE) >=1 ) { return true; } // >=1 indicates fully open window
     }
     return false;
 }
@@ -209,14 +229,13 @@ bool window_watcher(const std::vector<std::string>& windows) {
  * @param out_file Output file path representing where the image will be saved (empty if display only)
  * @return int 
  */
-int load_edge_detection(const std::string img_file, const std::string out_file){
+int method_edge_detection(const std::string& img_file, const std::string& out_file){
 
     std::cout << "\nCurrent image: " << img_file << std::endl;
     std::cout << "Current method: Canny" << std::endl;
     std::cout << "You can close the display windows using the exit button or esc/return keys\n" << std::endl;
 
-    // Load Image
-    cv::Mat image = cv::imread(img_file);
+    cv::Mat image = cv::imread(img_file); // Try to load image
 
     if (image.empty()) {
         std::cout << "This image does not exist (or is on the wrong file path): " << img_file << std::endl;
@@ -225,14 +244,12 @@ int load_edge_detection(const std::string img_file, const std::string out_file){
 
     cv::Mat img_gray, final;
 
-    // Gray Scale Conversion
-    cv::cvtColor(image, img_gray, cv::COLOR_BGR2GRAY);
+    cv::cvtColor(image, img_gray, cv::COLOR_BGR2GRAY); // Apply gray scale conversion for canny algorithm
 
-    // Edge Detection
     cv::Canny(img_gray, final, 100, 200);
 
     // DISPLAY CODE
-    
+
     cv::namedWindow("orig window", cv::WINDOW_KEEPRATIO);
     cv::namedWindow("edge detected window", cv::WINDOW_KEEPRATIO);
 
@@ -240,20 +257,20 @@ int load_edge_detection(const std::string img_file, const std::string out_file){
     cv::resizeWindow("orig window", 300,300);
 
     imshow("edge detected window", final);
-    cv::resizeWindow("edge detected window", 400,400);
+    cv::resizeWindow("edge detected window", 500,500);
 
     int key;
 
     while (window_watcher({"orig window", "edge detected window"})) {
         key = cv::waitKey(50);
-        if (key == 27 || key == 13) {
+        if (key == 27 || key == 13) { // return/esc keys to close windows
             cv::destroyWindow("orig window");
-            cv::destroyWindow("sift window");
+            cv::destroyWindow("edge detected window");
             break;
         }
     }
 
-    if (!out_file.empty()) {
+    if (!out_file.empty()) { // Save to output file if one exists
         try {
             cv::imwrite(out_file, final);
         }
@@ -273,7 +290,7 @@ int load_edge_detection(const std::string img_file, const std::string out_file){
  * @param out_file Output file path representing where the image will be saved (empty if display only)
  * @return int 
  */
-int load_sift(const std::string img_file, const std::string out_file){
+int method_sift(const std::string& img_file, const std::string& out_file){
 
     std::cout << "\nCurrent image: " << img_file << std::endl;
     std::cout << "Current method: SIFT" << std::endl;
@@ -289,10 +306,7 @@ int load_sift(const std::string img_file, const std::string out_file){
 
     cv::Mat img_gray, final;
 
-    // Gray Scale Conversion
-    cv::cvtColor(image, img_gray, cv::COLOR_BGR2GRAY);
-
-    // sift Detection
+    cv::cvtColor(image, img_gray, cv::COLOR_BGR2GRAY); // gray scale conversion to prepare for sift
 
     const auto sift = cv::SIFT::create();
     std::vector<cv::KeyPoint> keypoints;
@@ -310,7 +324,7 @@ int load_sift(const std::string img_file, const std::string out_file){
     cv::Mat display_image;
     cv::drawKeypoints(img_gray, keypoints, display_image);
     imshow("sift window", display_image);
-    cv::resizeWindow("sift window", 300,300);
+    cv::resizeWindow("sift window", 500,500);
 
     int key;
 
@@ -342,30 +356,68 @@ int load_sift(const std::string img_file, const std::string out_file){
  * @return options Returns instance of options class containing method, input file path(s), and optional output file paths
  */
 options prompt_user() {
+
     options opt;
+    Exit exit_state = Exit::Ok;
     Mode mode;
 
     while (!opt.method) {
-        opt.method=prompt_method();
+
+        opt.method=prompt_method(exit_state);
+
+        if (exit_state == Exit::Quit) {
+            throw std::runtime_error(
+                "User quit program\n"
+            );
+            break;
+            
+        }
 
         if (!opt.method) {
             std::cout << "Invalid method\n";
         }
+
     }
     while (!opt.input) {
+
+        if (exit_state == Exit::Quit) { // skip user entry if they are trying to quit
+            break;
+        }
+
         mode = Mode::in;
         std::cout << "\n---Input Files---" << std::endl;
-        opt.input=prompt_input_output(mode);
+        opt.input=prompt_input_output(exit_state, mode);
+
+        if (exit_state == Exit::Quit) {
+            throw std::runtime_error(
+                "User quit program\n"
+            );
+            break;
+        }
+
         if (!opt.input) {
             std::cout << "Invalid input format\n";
         }
     }
 
     while (!opt.output) {
+
+        if (exit_state == Exit::Quit) { // skip user entry if they are trying to quit
+            break;
+        }
+
         mode = Mode::out;
         std::cout << "\n---Output Files---" << std::endl;
         std::cout << "TIP: You can leave this empty if you do not want to save the images (blank or \"\")" << std::endl;
-        opt.output=prompt_input_output(mode);
+        opt.output=prompt_input_output(exit_state, mode);
+
+        if (exit_state == Exit::Quit) {
+            throw std::runtime_error(
+                "User quit program\n"
+            );
+            break;
+        }
+
         if (!opt.output) {
             std::cout << "Invalid output format\n";
         }
@@ -384,6 +436,7 @@ options prompt_user() {
  * @return options Returns instance of options class containing method, input file path(s), and optional output file paths
  */
 options parse_command_line(int argc, char* argv[]) {
+
     options opt; 
     Mode mode;
     bool help = false;
@@ -394,10 +447,12 @@ options parse_command_line(int argc, char* argv[]) {
         if (c==-1) {break;}
 
         switch(c) {
+
             case 'h':
                 help_func();
                 help=true;
                 break;
+
             case 'm':
                 opt.method=parse_method(optarg);
                 if (!opt.method) {
@@ -406,6 +461,7 @@ options parse_command_line(int argc, char* argv[]) {
                     );
                 }
                 break;
+
             case 'i':
                 mode = Mode::in;
                 opt.input=parse_input_output(optarg, mode);
@@ -415,6 +471,7 @@ options parse_command_line(int argc, char* argv[]) {
                     );
                 }
                 break;
+
             case 'o':
                 mode = Mode::out;
                 opt.output = parse_input_output(optarg, mode);
@@ -424,11 +481,13 @@ options parse_command_line(int argc, char* argv[]) {
                     );
                 }
                 break;
+
             default:
                 help_func();
                 break;
         }
     }
+
     if (!opt.method || !opt.input || !opt.output) {
         if (help != true) {
             help_func();
@@ -439,7 +498,6 @@ options parse_command_line(int argc, char* argv[]) {
     }
 
     return opt;
-
 }
 
 /**
@@ -456,7 +514,7 @@ int main(int argc, char* argv[]) {
 
         options opt;
 
-        if (argc > 1) {
+        if (argc > 1) { // if there are any arguments, assume user is entering command line interface
             opt=parse_command_line(argc, argv);
         } else {
             opt=prompt_user();
@@ -464,29 +522,29 @@ int main(int argc, char* argv[]) {
 
         const auto& input = *opt.input;
         std::vector<std::string> output;
-        if (opt.output) {
+
+        if (opt.output) { // change output only if it is non-null
             output = *opt.output;
         }
 
         switch (*opt.method) {
-            case 'e':
+
+            case Method::Edge:
                 for (size_t i = 0; i < input.size(); ++i) {
-                    const std::string output_file = (i < output.size()) ? output[i] : "";
-                    load_edge_detection(input[i], output_file);
+                    method_edge_detection(input[i], i < output.size() ? output[i] : ""); // send empty argument if no output file
                 }
                 break;
-            case 's':
+
+            case Method::Sift:
                 for (size_t i = 0; i < input.size(); ++i) {
-                    const std::string output_file = (i < output.size()) ? output[i] : "";
-                    load_sift(input[i], output_file);
+                    method_sift(input[i], i < output.size() ? output[i] : ""); // send empty argument if no output file
                 }
                 break;
         }
-
     }
 
     catch (const std::exception& e) {
-        std::cerr << "Error: " << e.what() << "\n";
+        std::cerr << "Error: " << e.what() << "\n"; // catch any thrown exceptions and exit before running
         return EXIT_FAILURE;
     }
 
