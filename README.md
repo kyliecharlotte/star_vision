@@ -15,6 +15,7 @@ To run once files are downloaded (or repo is cloned):
 1. ./main --> enters command prompt format where user will be prompted for information
 
 2. Run using flags:
+   
    Options:
      -h (--help): Help
    
