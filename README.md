@@ -35,3 +35,9 @@ To run once files are downloaded (or repo is cloned):
        ex: "" (for no output saving)
 
 ex: ./main -m e -i image.png -o output.png
+
+Next Steps:
+
+- Add more CAD algorithms + customization options
+- Add a display option
+- Move code around out of main.cpp
