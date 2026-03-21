@@ -14,6 +14,10 @@
 //
 // Entry: main()
 
+// TODO: For GUI integration, gtkmm free software under GNU which is the interface for GTK
+// Window: Allow for uploading images, tune parameters of function.
+// Is it worth it to show parameter fine tuning impact in real time?
+
 //=====================================================
 
 constexpr const char* short_opt = ":hm:i:o:";
@@ -550,8 +554,4 @@ int main(int argc, char* argv[]) {
 
     return EXIT_SUCCESS;
 }
-
-
-
-
 
