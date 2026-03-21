@@ -1,4 +1,4 @@
-# Star Vision
+# Star Vision - in development
 ## Modern C++ Exploration of Computer-aided Design (CAD) Techniques 
 
 ### Current Status:
