@@ -1,5 +1,8 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/features2d.hpp>
+
+#include <gtkmm.h>
+
 #include <iostream>
 #include <sstream>
 #include <vector>
