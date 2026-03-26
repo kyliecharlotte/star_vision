@@ -2,6 +2,9 @@
 #include <opencv2/features2d.hpp>
 
 #include <gtkmm.h>
+#include <gtkmm/application.h>
+
+#include "display.h"
 
 #include <iostream>
 #include <sstream>
@@ -517,6 +520,9 @@ options parse_command_line(int argc, char* argv[]) {
  */
 int main(int argc, char* argv[]) {
 
+    auto app = Gtk::Application::create("org.gtkmm.examples.base");
+    DisplayWindow window;
+    app->run(window);
     try {
 
         options opt;
