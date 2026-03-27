@@ -522,7 +522,11 @@ int main(int argc, char* argv[]) {
 
     auto app = Gtk::Application::create("org.gtkmm.examples.base");
     DisplayWindow window;
+    Grid grid;
+    window.add(grid);
+    window.show_all_children();
     app->run(window);
+
     try {
 
         options opt;

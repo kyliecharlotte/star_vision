@@ -8,10 +8,14 @@
 class DisplayWindow : public Gtk::Window {
 public:
     DisplayWindow();
-
-protected:
-    void on_button_press();
-    Gtk::Button button;
 };
 
+class Grid : public Gtk::Grid {
+    public:
+        Grid();
+    
+    protected:
+        void on_button_press();
+        Gtk::Button button;
+    };
 #endif
