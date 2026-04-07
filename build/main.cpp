@@ -376,9 +376,7 @@ options prompt_user() {
         opt.method=prompt_method(exit_state);
 
         if (exit_state == Exit::Quit) {
-            throw std::runtime_error(
-                "User quit program\n"
-            );
+            std::cout << "See you soon!\n";
             break;
             
         }
@@ -399,9 +397,7 @@ options prompt_user() {
         opt.input=prompt_input_output(exit_state, mode);
 
         if (exit_state == Exit::Quit) {
-            throw std::runtime_error(
-                "User quit program\n"
-            );
+            std::cout << "See you soon!" << std::endl;
             break;
         }
 
@@ -422,9 +418,7 @@ options prompt_user() {
         opt.output=prompt_input_output(exit_state, mode);
 
         if (exit_state == Exit::Quit) {
-            throw std::runtime_error(
-                "User quit program\n"
-            );
+            std::cout << "See you soon!\n" << std::endl;
             break;
         }
 
@@ -523,8 +517,37 @@ int main(int argc, char* argv[]) {
     auto app = Gtk::Application::create("org.gtkmm.examples.base");
     DisplayWindow window;
     Grid grid;
+    
     window.add(grid);
     window.show_all_children();
+
+    /*app->hold();*/
+    app->signal_startup().connect([&window]() {
+
+        Gtk::FileChooserDialog dialog(window, "Select images", Gtk::FILE_CHOOSER_ACTION_OPEN);
+        dialog.add_button("_CANCEL", Gtk::RESPONSE_CANCEL);
+        dialog.add_button("_OPEN", Gtk::RESPONSE_OK);
+        
+        int result = dialog.run();
+
+        switch (result) {
+            case (Gtk::RESPONSE_OK):
+            {
+                std::string filename = dialog.get_filename();
+                break;
+            }
+            case (Gtk::RESPONSE_CANCEL):
+            {
+                break;
+            }
+            default:
+            {
+                std::cout << "Default option clicked" << std::endl;
+            }
+        }
+
+    });
+
     app->run(window);
 
     try {
