@@ -26,6 +26,7 @@ void Grid::choose_file_button_press() {
     }
 }
 
+
 void Grid::update_from_res(const cv::Mat& result) {
     cv::Mat rgb;
 
@@ -93,7 +94,6 @@ void Grid::on_sift_button_press() {
 void Grid::render_image(const cv::Mat& mat){
     cv::Mat resized;
     cv::resize(mat, resized,cv::Size(display_width, display_height));
-    //cv::Mat rgb;
 
     if (resized.channels() == 1){
         cv::cvtColor(resized,display_mem,cv::COLOR_GRAY2RGB);

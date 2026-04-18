@@ -22,6 +22,7 @@ class Grid : public Gtk::Grid {
         void set_image(const std::string& filename);
         void update_from_res(const cv::Mat& result);
         void render_image(const cv::Mat& mat);
+        //void pipeline_update_algorithm_button();
     
     private:
         Gtk::Paned paned{Gtk::ORIENTATION_HORIZONTAL};

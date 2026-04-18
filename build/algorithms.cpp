@@ -45,16 +45,13 @@ cv::Mat method_edge_detection(const cv::Mat& img_file, int w, int h){
  */
 cv::Mat method_sift_detection(const cv::Mat& img_file, int w, int h){
 
-    std::cout << "\nCurrent image: " << img_file << std::endl;
-    std::cout << "Current method: SIFT" << std::endl;
-    std::cout << "You can close the display windows using the exit button or esc/return keys\n" << std::endl;
-
-    // Load Image
-    //cv::Mat image = cv::imread(img_file);
-
     cv::Mat img_gray, final;
 
-    cv::cvtColor(img_file, img_gray, cv::COLOR_BGR2GRAY); // gray scale conversion to prepare for sift
+    if (img_file.channels() == 3) {
+        cv::cvtColor(img_file, img_gray, cv::COLOR_BGR2GRAY); // gray scale conversion to prepare for sift
+    } else {
+        img_gray = img_file.clone();
+    }
 
     const auto sift = cv::SIFT::create();
     std::vector<cv::KeyPoint> keypoints;
@@ -62,5 +59,8 @@ cv::Mat method_sift_detection(const cv::Mat& img_file, int w, int h){
     sift->detectAndCompute(img_gray, cv::noArray(), keypoints, descriptors);
     cv::Mat output;
     cv::drawKeypoints(img_gray, keypoints, output);
+
+    cv::resize(output, output, cv::Size(w,h));
     return output;
+
 };
