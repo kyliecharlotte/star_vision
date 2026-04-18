@@ -43,7 +43,7 @@ cv::Mat method_edge_detection(const cv::Mat& img_file, int w, int h){
  * @param out_file Output file path representing where the image will be saved (empty if display only)
  * @return int 
  */
-cv::Mat method_sift(const cv::Mat& img_file, int w, int h){
+cv::Mat method_sift_detection(const cv::Mat& img_file, int w, int h){
 
     std::cout << "\nCurrent image: " << img_file << std::endl;
     std::cout << "Current method: SIFT" << std::endl;
@@ -60,6 +60,7 @@ cv::Mat method_sift(const cv::Mat& img_file, int w, int h){
     std::vector<cv::KeyPoint> keypoints;
     cv::Mat descriptors;
     sift->detectAndCompute(img_gray, cv::noArray(), keypoints, descriptors);
-    
-    return descriptors;
+    cv::Mat output;
+    cv::drawKeypoints(img_gray, keypoints, output);
+    return output;
 };

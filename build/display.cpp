@@ -18,6 +18,8 @@ void Grid::choose_file_button_press() {
 
     if (result == Gtk::RESPONSE_OK) {
         std::string filename = dialog.get_filename();
+        curr_img = cv::imread(filename);
+        orig_img = curr_img.clone();
         set_image(filename);
         text_file_name.set_visible(true);
         text_file_name.set_text("File selected:" + filename);
@@ -28,19 +30,19 @@ void Grid::update_from_res(const cv::Mat& result) {
     cv::Mat rgb;
 
     if (result.channels() == 1){
-        cv::cvtColor(result,rgb,cv::COLOR_GRAY2RGB);
+        cv::cvtColor(result,display_mem,cv::COLOR_GRAY2RGB);
     } else if (result.channels() == 3){
-        cv::cvtColor(result,rgb,cv::COLOR_BGR2RGB);
+        cv::cvtColor(result,display_mem,cv::COLOR_BGR2RGB);
     };
 
     auto pix = Gdk::Pixbuf::create_from_data(
-        rgb.data,
+        display_mem.data,
         Gdk::COLORSPACE_RGB,
         false,
         8,
-        rgb.cols,
-        rgb.rows,
-        rgb.step
+        display_mem.cols,
+        display_mem.rows,
+        display_mem.step
     );
 
     image.set(pix);
@@ -55,43 +57,58 @@ void Grid::apply_canny() {
     };
 }
 
+void Grid::apply_sift() {
+    if (orig_img.empty()) {return;}
+    else {
+        cv::Mat res = method_sift_detection(curr_img,display_width,display_height);
+        curr_img = res;
+        update_from_res(curr_img);
+    };
+};
+
 void Grid::restore_original() {
     curr_img = orig_img.clone();
     std::cout << "Restoring" << std::endl;
     render_image(curr_img);
-}
+};
 
 void Grid::on_canny_button_press() {
     if (canny_button.get_active()) {
         apply_canny();
     } else {
+        if (orig_img.empty()) {return;}
         restore_original();
     }
 };
 
 void Grid::on_sift_button_press() {
-    std::cout << "hello world" << std::endl;
+    if (sift_button.get_active()) {
+        apply_sift();
+    } else {
+        if (orig_img.empty()) {return;}
+        restore_original();
+    }
 };
 
 void Grid::render_image(const cv::Mat& mat){
     cv::Mat resized;
     cv::resize(mat, resized,cv::Size(display_width, display_height));
-    cv::Mat rgb;
+    //cv::Mat rgb;
 
     if (resized.channels() == 1){
-        cv::cvtColor(resized,rgb,cv::COLOR_GRAY2RGB);
+        cv::cvtColor(resized,display_mem,cv::COLOR_GRAY2RGB);
     } else if (resized.channels() == 3){
-        cv::cvtColor(resized,rgb,cv::COLOR_BGR2RGB);
+        cv::cvtColor(resized,display_mem,cv::COLOR_BGR2RGB);
     };
 
     auto pix = Gdk::Pixbuf::create_from_data(
-        rgb.data,
+        display_mem.data,
         Gdk::COLORSPACE_RGB,
         false,
         8,
-        rgb.cols,
-        rgb.rows,
-        rgb.step
+        display_mem.cols,
+        display_mem.rows,
+        display_mem.step
     );
 
     image.set(pix);
@@ -106,17 +123,9 @@ void Grid::set_image(const std::string& filename) {
     int tar_height = (tar_width * original_height) / original_width;
     display_width = tar_width;
     display_height = tar_height;
-    curr_img = cv::imread(filename);
-    orig_img = curr_img.clone();
+    //curr_img = cv::imread(filename);
+    //orig_img = curr_img.clone();
     render_image(curr_img);
-
-    /*pix = pix->scale_simple(
-        tar_width,
-        tar_height,
-        Gdk::INTERP_BILINEAR
-    );
-    
-    image.set(pix);*/
 };
 
 Grid::Grid() : Gtk::Grid() {
@@ -134,13 +143,13 @@ Grid::Grid() : Gtk::Grid() {
 
     method_label.set_markup("<b>Select Method(s):</b>");
     edge_desc.set_markup("1. Canny Edge Detection - Identify edges");
-    sift_desc.set_markup("2. SIFT");
+    sift_desc.set_markup("2. SIFT (Scale-Invariant Feature Transform) - Identifies objects");
 
     canny_button.set_label("Edge Detection");
     canny_button.signal_toggled().connect(sigc::mem_fun(*this, 
         &Grid::on_canny_button_press));
 
-    sift_button.set_label("Edge Detection");
+    sift_button.set_label("SIFT");
     sift_button.signal_toggled().connect(sigc::mem_fun(*this, 
         &Grid::on_sift_button_press));
 

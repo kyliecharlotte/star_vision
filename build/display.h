@@ -33,6 +33,7 @@ class Grid : public Gtk::Grid {
     protected:
 
         void apply_canny();
+        void apply_sift();
         void restore_original();
         void on_canny_button_press();
         void on_sift_button_press();
@@ -55,6 +56,7 @@ class Grid : public Gtk::Grid {
 
         cv::Mat curr_img;
         cv::Mat orig_img;
+        cv::Mat display_mem;
         int display_height = 600;
         int display_width = 800;
 };
