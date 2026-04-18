@@ -242,7 +242,7 @@ bool window_watcher(const std::vector<std::string>& windows) {
 int method_edge_detection(const std::string& img_file, const std::string& out_file){
 
     std::cout << "\nCurrent image: " << img_file << std::endl;
-    std::cout << "Current method: Canny" << std::endl;
+    std::cout << "Current method: Canny Edge Detection" << std::endl;
     std::cout << "You can close the display windows using the exit button or esc/return keys\n" << std::endl;
 
     cv::Mat image = cv::imread(img_file); // Try to load image
@@ -365,7 +365,7 @@ int method_sift(const std::string& img_file, const std::string& out_file){
  * 
  * @return options Returns instance of options class containing method, input file path(s), and optional output file paths
  */
-options prompt_user() {
+options prompt_user(std::string f) {
 
     options opt;
     Exit exit_state = Exit::Ok;
@@ -386,7 +386,10 @@ options prompt_user() {
         }
 
     }
-    while (!opt.input) {
+    opt.input = parse_input_output(f, Mode::in);
+
+
+    /*while (!opt.input) {
 
         if (exit_state == Exit::Quit) { // skip user entry if they are trying to quit
             break;
@@ -404,7 +407,7 @@ options prompt_user() {
         if (!opt.input) {
             std::cout << "Invalid input format\n";
         }
-    }
+    }*/
 
     while (!opt.output) {
 
@@ -520,9 +523,10 @@ int main(int argc, char* argv[]) {
     
     window.add(grid);
     window.show_all_children();
+    std::string filename;
 
     /*app->hold();*/
-    app->signal_startup().connect([&window]() {
+    app->signal_startup().connect([&window, &filename]() {
 
         Gtk::FileChooserDialog dialog(window, "Select images", Gtk::FILE_CHOOSER_ACTION_OPEN);
         dialog.add_button("_CANCEL", Gtk::RESPONSE_CANCEL);
@@ -533,7 +537,7 @@ int main(int argc, char* argv[]) {
         switch (result) {
             case (Gtk::RESPONSE_OK):
             {
-                std::string filename = dialog.get_filename();
+                filename = dialog.get_filename();
                 break;
             }
             case (Gtk::RESPONSE_CANCEL):
@@ -557,7 +561,7 @@ int main(int argc, char* argv[]) {
         if (argc > 1) { // if there are any arguments, assume user is entering command line interface
             opt=parse_command_line(argc, argv);
         } else {
-            opt=prompt_user();
+            opt=prompt_user(filename);
         }
 
         const auto& input = *opt.input;
