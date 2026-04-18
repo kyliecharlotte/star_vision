@@ -1,0 +1,65 @@
+#include <opencv2/opencv.hpp>
+#include <opencv2/features2d.hpp>
+
+#include "display.h"
+#include "algorithms.h"
+
+#include <iostream>
+#include <sstream>
+#include <vector>
+#include <list>
+#include <fstream>
+#include <getopt.h>
+#include <optional>
+
+/**
+ * @brief Run the Canny Edge Detection algorithm on an image and optionally save the results as a new image
+ * 
+ * @param img_file Input file path representing image that the method is to be applied to 
+ * @param out_file Output file path representing where the image will be saved (empty if display only)
+ * @return cv::Mat 
+ */
+cv::Mat method_edge_detection(const cv::Mat& img_file, int w, int h){
+
+    //cv::Mat image = cv::imread(img_file); // Try to load image
+
+    std::cout << "\nCanny Edge Detection" << std::endl;
+
+    cv::Mat img_gray, final;
+
+    cv::cvtColor(img_file, img_gray, cv::COLOR_BGR2GRAY); // Apply gray scale conversion for canny algorithm
+
+    cv::Canny(img_gray, final, 100, 200);
+
+    cv::resize(final, final, cv::Size(w,h));
+
+    return final;
+};
+
+/**
+ * @brief Run the SIFT algorithm on an image and optionally save the results as a new image
+ * 
+ * @param img_file Input file path representing image that the method is to be applied to 
+ * @param out_file Output file path representing where the image will be saved (empty if display only)
+ * @return int 
+ */
+cv::Mat method_sift(const cv::Mat& img_file, int w, int h){
+
+    std::cout << "\nCurrent image: " << img_file << std::endl;
+    std::cout << "Current method: SIFT" << std::endl;
+    std::cout << "You can close the display windows using the exit button or esc/return keys\n" << std::endl;
+
+    // Load Image
+    //cv::Mat image = cv::imread(img_file);
+
+    cv::Mat img_gray, final;
+
+    cv::cvtColor(img_file, img_gray, cv::COLOR_BGR2GRAY); // gray scale conversion to prepare for sift
+
+    const auto sift = cv::SIFT::create();
+    std::vector<cv::KeyPoint> keypoints;
+    cv::Mat descriptors;
+    sift->detectAndCompute(img_gray, cv::noArray(), keypoints, descriptors);
+    
+    return descriptors;
+};

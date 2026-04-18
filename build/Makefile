@@ -6,7 +6,7 @@ LDFLAGS += $(shell pkg-config --libs opencv4 gtkmm-3.0)
 
 EXEC = main
 
-SOURCES = main.cpp display.cpp
+SOURCES = main.cpp display.cpp algorithms.cpp
 OBJECTS = $(SOURCES:.cpp=.o)
 
 all: $(EXEC)
