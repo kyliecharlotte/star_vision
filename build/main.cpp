@@ -523,21 +523,15 @@ int main(int argc, char* argv[]) {
     
     window.add(grid);
     window.show_all_children();
-    std::string filename;
 
     /*app->hold();*/
-    app->signal_startup().connect([&window, &filename]() {
-
-        Gtk::FileChooserDialog dialog(window, "Select images", Gtk::FILE_CHOOSER_ACTION_OPEN);
-        dialog.add_button("_CANCEL", Gtk::RESPONSE_CANCEL);
-        dialog.add_button("_OPEN", Gtk::RESPONSE_OK);
-        
-        int result = dialog.run();
+    /*app->signal_startup().connect([&window, &filename]() {
 
         switch (result) {
             case (Gtk::RESPONSE_OK):
             {
                 filename = dialog.get_filename();
+                
                 break;
             }
             case (Gtk::RESPONSE_CANCEL):
@@ -550,11 +544,13 @@ int main(int argc, char* argv[]) {
             }
         }
 
-    });
+    });*/
+
+    //grid.set_image(filename);
 
     app->run(window);
 
-    try {
+    /*try {
 
         options opt;
 
@@ -592,6 +588,6 @@ int main(int argc, char* argv[]) {
         return EXIT_FAILURE;
     }
 
-    return EXIT_SUCCESS;
+    return EXIT_SUCCESS;*/
 }
 
