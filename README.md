@@ -13,6 +13,9 @@
 To run once files are downloaded and dependencies are installed:
 
 1. ./main --> opens GUI
+<img width="1200" height="831" alt="image" src="https://github.com/user-attachments/assets/447fe6dd-0948-4fe6-b4f7-560931b75996" />
+<img width="1201" height="829" alt="image" src="https://github.com/user-attachments/assets/9bb28cf7-d90d-4d36-8dba-2c6a82e325d2" />
+
 
 #### On Branch Main:
 
