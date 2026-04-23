@@ -29,6 +29,8 @@ cv::Mat method_edge_detection(const cv::Mat& img_file, int w, int h){
 
     cv::cvtColor(img_file, img_gray, cv::COLOR_BGR2GRAY); // Apply gray scale conversion for canny algorithm
 
+    //threshold arguments: threshold2 ~ threshold1 * 2/3
+    //threshold2: definitely an edge, threshold 1: maybe an edge
     cv::Canny(img_gray, final, 100, 200);
 
     cv::resize(final, final, cv::Size(w,h));

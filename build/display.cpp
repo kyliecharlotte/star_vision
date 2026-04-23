@@ -26,7 +26,6 @@ void Grid::choose_file_button_press() {
     }
 }
 
-
 void Grid::update_from_res(const cv::Mat& result) {
     cv::Mat rgb;
 
@@ -75,8 +74,10 @@ void Grid::restore_original() {
 
 void Grid::on_canny_button_press() {
     if (canny_button.get_active()) {
+        canny_show_text();
         apply_canny();
     } else {
+        canny_hide_text();
         if (orig_img.empty()) {return;}
         restore_original();
     }
@@ -141,6 +142,8 @@ Grid::Grid() : Gtk::Grid() {
     text_file_name.set_visible(false);
     left_panel.pack_start(text_file_name, Gtk::PACK_SHRINK);
 
+    set_up_threshold_values();
+
     method_label.set_markup("<b>Select Method(s):</b>");
     edge_desc.set_markup("1. Canny Edge Detection - Identify edges");
     sift_desc.set_markup("2. SIFT (Scale-Invariant Feature Transform) - Identifies objects");
@@ -159,6 +162,9 @@ Grid::Grid() : Gtk::Grid() {
     left_panel.pack_start(method_label, Gtk::PACK_SHRINK);
     left_panel.pack_start(edge_desc,Gtk::PACK_SHRINK);
     left_panel.pack_start(canny_button,Gtk::PACK_SHRINK);
+    left_panel.pack_start(threshold_one_options, Gtk::PACK_SHRINK);
+    left_panel.pack_start(threshold_two_options, Gtk::PACK_SHRINK);
+         
     left_panel.pack_start(sift_desc,Gtk::PACK_SHRINK);
     left_panel.pack_start(sift_button,Gtk::PACK_SHRINK);
 

@@ -22,6 +22,9 @@ class Grid : public Gtk::Grid {
         void set_image(const std::string& filename);
         void update_from_res(const cv::Mat& result);
         void render_image(const cv::Mat& mat);
+        void canny_hide_text();
+        void canny_show_text();
+        void set_up_threshold_values();
         //void pipeline_update_algorithm_button();
     
     private:
@@ -30,6 +33,14 @@ class Grid : public Gtk::Grid {
         Gtk::Box left_panel{Gtk::ORIENTATION_VERTICAL};
         Gtk::Box left_bottom{Gtk::ORIENTATION_VERTICAL};
         Gtk::Box right_panel{Gtk::ORIENTATION_VERTICAL};
+
+        Gtk::Box threshold_one_options;
+        Gtk::Box one_left_side_left_side{Gtk::ORIENTATION_HORIZONTAL};
+        Gtk::Box one_left_side_right_side{Gtk::ORIENTATION_HORIZONTAL};
+
+        Gtk::Box threshold_two_options;
+        Gtk::Box two_left_side_left_side{Gtk::ORIENTATION_HORIZONTAL};
+        Gtk::Box two_left_side_right_side{Gtk::ORIENTATION_HORIZONTAL};
 
     protected:
 
@@ -51,6 +62,10 @@ class Grid : public Gtk::Grid {
         Gtk::Label edge_desc;
         Gtk::Label sift_desc;
         Gtk::Label text_file_name;
+
+        Gtk::Entry threshold_one_entry;
+        Gtk::Entry threshold_two_entry;
+        Gtk::SpinButton threshold_val;
 
         Gtk::Image image;
         Gtk::Box image_box;
