@@ -397,6 +397,7 @@ int main(int argc, char* argv[]) {
     window.add(grid);
     window.show_all_children();
     grid.canny_hide_text();
+    grid.sift_hide_text();
 
     /*app->hold();*/
     /*app->signal_startup().connect([&window, &filename]() {

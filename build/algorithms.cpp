@@ -19,7 +19,7 @@
  * @param out_file Output file path representing where the image will be saved (empty if display only)
  * @return cv::Mat 
  */
-cv::Mat method_edge_detection(const cv::Mat& img_file, int w, int h){
+cv::Mat method_edge_detection(const cv::Mat& img_file, int w, int h, int threshold_1, int threshold_2){
 
     //cv::Mat image = cv::imread(img_file); // Try to load image
 
@@ -31,7 +31,7 @@ cv::Mat method_edge_detection(const cv::Mat& img_file, int w, int h){
 
     //threshold arguments: threshold2 ~ threshold1 * 2/3
     //threshold2: definitely an edge, threshold 1: maybe an edge
-    cv::Canny(img_gray, final, 100, 200);
+    cv::Canny(img_gray, final, threshold_1, threshold_2);
 
     cv::resize(final, final, cv::Size(w,h));
 
@@ -45,7 +45,8 @@ cv::Mat method_edge_detection(const cv::Mat& img_file, int w, int h){
  * @param out_file Output file path representing where the image will be saved (empty if display only)
  * @return int 
  */
-cv::Mat method_sift_detection(const cv::Mat& img_file, int w, int h){
+cv::Mat method_sift_detection(const cv::Mat& img_file, int w, int h, int nfeatures,
+                            int nlayers, double contrast_threshold, double edge_threshold){
 
     cv::Mat img_gray, final;
 
@@ -55,7 +56,8 @@ cv::Mat method_sift_detection(const cv::Mat& img_file, int w, int h){
         img_gray = img_file.clone();
     }
 
-    const auto sift = cv::SIFT::create();
+    const auto sift = cv::SIFT::create(nfeatures=nfeatures, nlayers,
+                                        contrast_threshold, edge_threshold);
     std::vector<cv::KeyPoint> keypoints;
     cv::Mat descriptors;
     sift->detectAndCompute(img_gray, cv::noArray(), keypoints, descriptors);

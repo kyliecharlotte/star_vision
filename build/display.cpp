@@ -51,7 +51,10 @@ void Grid::update_from_res(const cv::Mat& result) {
 void Grid::apply_canny() {
     if (orig_img.empty()) {return;}
     else {
-        cv::Mat res = method_edge_detection(curr_img,display_width,display_height);
+        int threshold_1 = std::stoi(threshold_one_entry.get_text());
+        int threshold_2 = std::stoi(threshold_two_entry.get_text());
+        cv::Mat res = method_edge_detection(orig_img,display_width,display_height,
+                        threshold_1, threshold_2);
         curr_img = res;
         update_from_res(curr_img);
     };
@@ -60,7 +63,12 @@ void Grid::apply_canny() {
 void Grid::apply_sift() {
     if (orig_img.empty()) {return;}
     else {
-        cv::Mat res = method_sift_detection(curr_img,display_width,display_height);
+        int nfeatures = std::stoi(nfeatures_entry.get_text());
+        int nlayers = std::stoi(nlayers_entry.get_text());
+        double contrast_t = std::stof(contrast_threshold.get_text());
+        double edge_t = std::stof(edge_threshold.get_text());
+        cv::Mat res = method_sift_detection(orig_img,display_width,display_height,
+        nfeatures, nlayers, contrast_t, edge_t);
         curr_img = res;
         update_from_res(curr_img);
     };
@@ -75,21 +83,41 @@ void Grid::restore_original() {
 void Grid::on_canny_button_press() {
     if (canny_button.get_active()) {
         canny_show_text();
-        apply_canny();
+        //apply_canny();
     } else {
         canny_hide_text();
         if (orig_img.empty()) {return;}
-        restore_original();
+        //restore_original();
     }
 };
 
 void Grid::on_sift_button_press() {
     if (sift_button.get_active()) {
-        apply_sift();
+        sift_show_text();
+        //apply_sift();
     } else {
+        sift_hide_text();
         if (orig_img.empty()) {return;}
-        restore_original();
+        //restore_original();
     }
+};
+
+void Grid::on_canny_submit() {
+    apply_canny();
+};
+
+void Grid::on_canny_reset() {
+    if (orig_img.empty()) {return;}
+    restore_original();
+};
+
+void Grid::on_sift_submit() {
+    apply_sift();
+};
+
+void Grid::on_sift_reset() {
+    if (orig_img.empty()) {return;}
+    restore_original();
 };
 
 void Grid::render_image(const cv::Mat& mat){
@@ -134,7 +162,9 @@ Grid::Grid() : Gtk::Grid() {
     choose_file_button.set_label("Load File");
     choose_file_button.signal_clicked().connect(sigc::mem_fun(*this, 
         &Grid::choose_file_button_press));
+
     file_label.set_markup("<b>Import File:</b>");
+
     left_panel.pack_start(file_label, Gtk::PACK_SHRINK);
     left_panel.pack_start(choose_file_button, Gtk::PACK_SHRINK);
 
@@ -143,6 +173,7 @@ Grid::Grid() : Gtk::Grid() {
     left_panel.pack_start(text_file_name, Gtk::PACK_SHRINK);
 
     set_up_threshold_values();
+    set_up_sift_values();
 
     method_label.set_markup("<b>Select Method(s):</b>");
     edge_desc.set_markup("1. Canny Edge Detection - Identify edges");
@@ -164,9 +195,13 @@ Grid::Grid() : Gtk::Grid() {
     left_panel.pack_start(canny_button,Gtk::PACK_SHRINK);
     left_panel.pack_start(threshold_one_options, Gtk::PACK_SHRINK);
     left_panel.pack_start(threshold_two_options, Gtk::PACK_SHRINK);
+    left_panel.pack_start(canny_submit_options, Gtk::PACK_SHRINK);
          
     left_panel.pack_start(sift_desc,Gtk::PACK_SHRINK);
     left_panel.pack_start(sift_button,Gtk::PACK_SHRINK);
+    left_panel.pack_start(n_options, Gtk::PACK_SHRINK);
+    left_panel.pack_start(threshold_options, Gtk::PACK_SHRINK);
+    left_panel.pack_start(sift_submit_options, Gtk::PACK_SHRINK);
 
     left_bottom.set_vexpand(true);
     left_bottom.pack_start(*(Gtk::make_managed<Gtk::Label>("")));
@@ -174,9 +209,6 @@ Grid::Grid() : Gtk::Grid() {
     image.set_hexpand(true);
     image.set_vexpand(true);
     right_panel.pack_start(image);
-    /*right_panel.signal_size_allocate().connect(
-        sigc::mem_fun(*this,&Grid::on_resize) 
-    );*/
 
     left_paned.pack1(left_panel, false, false);
     left_paned.pack2(left_bottom, true, false);
